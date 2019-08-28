@@ -1,0 +1,73 @@
+ID: cc
+_schema-version: '2.1'
+version: 0.0.1
+modules:
+  - name: db
+    type: hdb
+    path: db
+    requires:
+      - name: hdi_db
+  - name: java
+    type: java
+    path: java
+    parameters:
+      memory: 512M
+    provides:
+      - name: java_api
+        properties:
+          url: '${default-url}'
+    requires:
+      - name: hdi_db
+        properties:
+          JBP_CONFIG_RESOURCE_CONFIGURATION: '[tomcat/webapps/ROOT/META-INF/context.xml: {"service_name_for_DefaultDB" : "~{hdi-container-name}"}]'
+    build-parameters:
+      build-result: 'target/*.jar'
+
+  - name: web
+    type: html5
+    path: web
+    parameters:
+       disk-quota: 256M
+       memory: 256M
+    build-parameters:
+       builder: grunt
+    requires:
+     - name: uaa_cc
+     - name: dest_cc
+
+
+  - name: ff
+    type: java
+    path: ff
+    parameters:
+       memory: 512M
+    provides:
+     - name: ff_api
+       properties:
+          url: ${default-url}
+    requires:
+     - name: hdi_db
+       properties:
+          JBP_CONFIG_RESOURCE_CONFIGURATION: '[tomcat/webapps/ROOT/META-INF/context.xml:
+             {"service_name_for_DefaultDB" : "~{hdi-container-name}"}]'
+
+resources:
+  - name: hdi_db
+    properties:
+      hdi-container-name: '${service-name}'
+    type: com.sap.xs.hdi-container
+
+  - name: uaa_cc
+    parameters:
+       path: ./xs-security.json
+       service-plan: application
+       service: xsuaa
+    type: org.cloudfoundry.managed-service
+
+
+  - name: dest_cc
+    parameters:
+       service-plan: lite
+       service: destination
+    type: org.cloudfoundry.managed-service
+
